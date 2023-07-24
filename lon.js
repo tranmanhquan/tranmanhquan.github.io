@@ -1,8 +1,8 @@
 var canvas = document.getElementById('gameCanvas');
 var ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = 480;
+canvas.height = 320;
 
 var ball = {
     x: canvas.width / 2,
@@ -19,6 +19,20 @@ var paddle = {
     x: (canvas.width - 75) / 2,
     color: "#FF4500"
 };
+
+var bricks = [];
+for(let c=0; c<5; c++) {
+    bricks[c] = [];
+    for(let r=0; r<3; r++) {
+        bricks[c][r] = { x: 0, y: 0, status: 1 };
+    }
+}
+
+var brickWidth = canvas.width / 5;
+var brickHeight = 20;
+var brickPadding = 10;
+var brickOffsetTop = 30;
+var brickOffsetLeft = 30;
 
 var score = 0;
 var scoreText = document.getElementById('score');
@@ -56,10 +70,30 @@ function drawPaddle() {
     ctx.closePath();
 }
 
+function drawBricks() {
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            if(bricks[c][r].status == 1) {
+                var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+                var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+                bricks[c][r].x = brickX;
+                bricks[c][r].y = brickY;
+                ctx.beginPath();
+                ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                ctx.fillStyle = "#0095DD";
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+    }
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBall();
     drawPaddle();
+    drawBricks();
+    collisionDetection();
 
     if(ball.x + ball.dx > canvas.width-ball.radius || ball.x + ball.dx < ball.radius) {
         ball.dx = -ball.dx;
@@ -70,8 +104,6 @@ function draw() {
     else if(ball.y + ball.dy > canvas.height-ball.radius) {
         if(ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
             ball.dy = -ball.dy;
-            score++;
-            scoreText.textContent = 'Score: ' + score;
         }
         else {
             alert("GAME OVER");
@@ -82,6 +114,27 @@ function draw() {
 
     ball.x += ball.dx;
     ball.y += ball.dy;
+}
+
+function collisionDetection() {
+    for(let c=0; c<5; c++) {
+        for(let r=0; r<3; r++) {
+            var b = bricks[c][r];
+            if(b.status == 1) {
+                if(ball.x > b.x && ball.x < b.x+brickWidth && ball.y > b.y && ball.y < b.y+brickHeight) {
+                    ball.dy = -ball.dy;
+                    b.status = 0;
+                    score++;
+                    scoreText.textContent = 'Score: ' + score;
+                    if(score == 5*3) {
+                        alert("YOU WIN, CONGRATULATIONS!");
+                        document.location.reload();
+                        clearInterval(interval); // Needed for Chrome to end game
+                    }
+                }
+            }
+        }
+    }
 }
 
 var interval = setInterval(draw, 10);
